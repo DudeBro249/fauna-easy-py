@@ -1,4 +1,5 @@
-from typing import Any
+from fauna_easy.fauna_paginate_response import FaunaPaginateResponse
+from typing import Any, List, Union
 
 from faunadb import query as q
 from faunadb.client import FaunaClient
@@ -74,6 +75,29 @@ class FaunaEasyBaseModel:
         )
 
         return FaunaDocument(**updated_document)
+    
+
+    def query_by_index(self, index: str, terms: List[Any], data: bool = False) -> FaunaPaginateResponse:
+        if len(terms) < 1:
+            raise Exception('terms must be a list with a length greater than 1')
+        fauna_client = self._getFaunaClient()
+
+        fauna_query = q.paginate(
+            q.match(
+                q.index(index),
+                terms if len(terms) > 1 else terms[0],
+            ),
+        )
+
+        if data:
+            fauna_query = q.map_(
+                fauna_query,
+                q.lambda_('X', q.get(q.var('X')))
+            )
+        
+        documents = fauna_client.query(fauna_query)
+        return FaunaPaginateResponse(**documents)
+
     
 
     def find_by_id(self, id: str) -> FaunaDocument[dict]:

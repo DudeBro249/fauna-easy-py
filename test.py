@@ -33,3 +33,6 @@ if __name__ == '__main__':
     deleted_document = Post.delete(created_document.ref.id())
     print('document deleted: ')
     print(deleted_document.data)
+
+    documents = Post.query_by_index('posts_by_content', ['my post content'])
+    print(documents.dict())
