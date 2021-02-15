@@ -1,14 +1,11 @@
-from typing import Any, TypeVar
+from typing import Any
 
 from faunadb import query as q
 from faunadb.client import FaunaClient
 from pydantic import BaseModel
-import pydantic
 
 from .store import FaunaEasyStore
 from .fauna_document import FaunaDocument
-
-T = TypeVar('T')
 
 class FaunaEasyBaseModel:
     collection: str
@@ -27,10 +24,10 @@ class FaunaEasyBaseModel:
         fauna_secret: str = FaunaEasyStore().fauna_secret
         return FaunaClient(fauna_secret)
 
-    def create(self, doc: dict, id: str = None) -> FaunaDocument[pydantic.BaseModel]:
+    def create(self, doc: dict, id: str = None) -> FaunaDocument[dict]:
         fauna_client = self._getFaunaClient()
         self.pydantic_basemodel(**doc)
-        createdDocument = fauna_client.query(
+        created_document = fauna_client.query(
             q.create(
                 q.ref(
                     q.collection(
@@ -44,6 +41,50 @@ class FaunaEasyBaseModel:
             ),
         )
 
-        return createdDocument
+        return FaunaDocument(**created_document)
+    
+    def delete(self, id: str) -> FaunaDocument[dict]:
+        fauna_client = self._getFaunaClient()
+        deleted_document = fauna_client.query(
+            q.delete(
+                q.ref(
+                    q.collection(
+                        self.collection,
+                    ),
+                    id=id
+                )
+            ),
+        )
 
+        return FaunaDocument(**deleted_document)
 
+    
+    def update(self, doc: dict, id: str) -> FaunaDocument[dict]:
+        fauna_client = self._getFaunaClient()
+        updated_document = fauna_client.query(
+            q.update(
+                q.ref(
+                    q.collection(
+                        self.collection,
+                    ),
+                    id=id
+                ),
+                { 'data': doc },
+            ),
+        )
+
+        return FaunaDocument(**updated_document)
+    
+
+    def find_by_id(self, id: str) -> FaunaDocument[dict]:
+        fauna_client = self._getFaunaClient()
+        document: FaunaDocument[dict] = fauna_client.query(
+            q.get(
+                q.ref(
+                    q.collection(self.collection),
+                    id,
+                )
+            )
+        )
+
+        return FaunaDocument(**document)

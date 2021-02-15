@@ -10,7 +10,26 @@ if __name__ == '__main__':
     fauna_easy.use('YOUR_CLIENT_SECRET')
 
     Post = FaunaEasyBaseModel('posts', NewPost)
-    Post.create({
+
+    created_document = Post.create({
         'title': 'my post title',
-        'content': 'my post content',
+        'content': 'my post content'
     })
+
+    print('document created: ')
+    print(created_document.data)
+    print(created_document.ref.id())
+
+    print(Post.find_by_id(created_document.ref.id()))
+
+    updated_document = Post.update({
+        'title': 'my updated title',
+        'content': 'my post content',
+    }, id=created_document.ref.id())
+    print('document created: ')
+    print(updated_document.data)
+    print(updated_document.ref.id())
+
+    deleted_document = Post.delete(created_document.ref.id())
+    print('document deleted: ')
+    print(deleted_document.data)
