@@ -1,12 +1,7 @@
 from typing import Any
 
 from faunadb import query as q
-from faunadb.client import FaunaClient
 from pydantic import BaseModel
-
-from .models.fauna_document import FaunaDocument
-from .store import FaunaEasyStore
-
 
 class FaunaEasyBaseModel:
     collection: str
@@ -21,72 +16,49 @@ class FaunaEasyBaseModel:
 
         self.pydantic_basemodel = pydantic_basemodel
 
-    def _getFaunaClient(self) -> FaunaClient:
-        fauna_secret: str = FaunaEasyStore().fauna_secret
-        return FaunaClient(fauna_secret)
-
-    def create(self, doc: dict, id: str = None) -> FaunaDocument[dict]:
-        fauna_client = self._getFaunaClient()
+    def create(self, doc: dict, id: str = None) -> q._Expr:
         self.pydantic_basemodel(**doc)
-        created_document = fauna_client.query(
-            q.create(
-                q.ref(
-                    q.collection(
-                        self.collection,
-                    ),
-                    id=id
-                ) if id != None else q.collection(
+        return q.create(
+            q.ref(
+                q.collection(
                     self.collection,
                 ),
-                { 'data': doc },
+                id=id
+            ) if id != None else q.collection(
+                self.collection,
             ),
-        )
-
-        return FaunaDocument(**created_document)
+            { 'data': doc },
+        ),
     
-    def delete(self, id: str) -> FaunaDocument[dict]:
-        fauna_client = self._getFaunaClient()
-        deleted_document = fauna_client.query(
-            q.delete(
-                q.ref(
-                    q.collection(
-                        self.collection,
-                    ),
-                    id=id
-                )
-            ),
-        )
-
-        return FaunaDocument(**deleted_document)
-
-    
-    def update(self, doc: dict, id: str) -> FaunaDocument[dict]:
-        fauna_client = self._getFaunaClient()
-        updated_document = fauna_client.query(
-            q.update(
-                q.ref(
-                    q.collection(
-                        self.collection,
-                    ),
-                    id=id
+    def delete(self, id: str) -> q._Expr:
+        return q.delete(
+            q.ref(
+                q.collection(
+                    self.collection,
                 ),
-                { 'data': doc },
-            ),
-        )
+                id=id
+            )
+        ),
 
-        return FaunaDocument(**updated_document)
+    
+    def update(self, doc: dict, id: str) -> q._Expr:
+        self.pydantic_basemodel(**doc)
+        return q.update(
+            q.ref(
+                q.collection(
+                        self.collection,
+                ),
+                id=id
+            ),
+            { 'data': doc },
+        ),
 
     
 
-    def find_by_id(self, id: str) -> FaunaDocument[dict]:
-        fauna_client = self._getFaunaClient()
-        document: FaunaDocument[dict] = fauna_client.query(
-            q.get(
-                q.ref(
-                    q.collection(self.collection),
-                    id,
-                )
+    def find_by_id(self, id: str) -> q._Expr:
+        return q.get(
+            q.ref(
+                q.collection(self.collection),
+                id,
             )
         )
-
-        return FaunaDocument(**document)

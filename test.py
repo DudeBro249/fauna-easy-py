@@ -1,38 +1,39 @@
-import fauna_easy
 from fauna_easy.base_model import FaunaEasyBaseModel
 from pydantic import BaseModel
+from faunadb.client import FaunaClient
 
 if __name__ == '__main__':
     class NewPost(BaseModel):
         title: str
         content: str
 
-    fauna_easy.use('YOUR_CLIENT_SECRET')
+    fauna_client = FaunaClient('YOUR_CLIENT_SECRET')
 
     Post = FaunaEasyBaseModel('posts', NewPost)
 
-    created_document = Post.create({
+    create_query = Post.create({
         'title': 'my post title',
         'content': 'my post content'
     })
 
-    print('document created: ')
-    print(created_document.data)
-    print(created_document.ref.id())
+    created_documents = fauna_client.query(create_query)
+    print(created_documents)
 
-    print(Post.find_by_id(created_document.ref.id()))
+    update_query = Post.update({
+        'title': 'updated title',
+        'content': 'updated content'
+    }, '292479043830284807')
 
-    updated_document = Post.update({
-        'title': 'my updated title',
-        'content': 'my post content',
-    }, id=created_document.ref.id())
-    print('document created: ')
-    print(updated_document.data)
-    print(updated_document.ref.id())
+    updated_document = fauna_client.query(update_query)
+    print('updated document')
+    print(updated_document)
 
-    deleted_document = Post.delete(created_document.ref.id())
-    print('document deleted: ')
-    print(deleted_document.data)
+    delete_query = Post.delete('id')
+    deleted_document = fauna_client.query(delete_query)
+    print('deleted document: ')
+    print(deleted_document)
 
-    documents = Post.query_by_index('posts_by_content', ['my post content'])
-    print(documents.dict())
+    find_query = Post.find_by_id('id')
+    document = fauna_client.query(find_query)
+    print('found document: ')
+    print(document)
